@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:personal_expenses/widgets/chart.dart';
 import 'package:personal_expenses/widgets/new_transaction.dart';
 import 'package:personal_expenses/widgets/transactions_list.dart';
@@ -9,7 +10,10 @@ import 'models/transactions.dart';
 // import 'package:flutter/services.dart';
 // import 'package:intl/intl.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp,DeviceOrientation.portraitUp]);
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -19,12 +23,16 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demois',
       theme: ThemeData(
         primarySwatch: Colors.cyan,
+        errorColor: Colors.indigo,
         fontFamily: 'Quicksand',
         textTheme: ThemeData.light().textTheme.copyWith(
           title: TextStyle(
             fontFamily: 'OpenSans',
             fontWeight: FontWeight.bold,
             fontSize: 18
+          ),
+          button: TextStyle(
+            color: Colors.white
           )
         ),
         appBarTheme: AppBarTheme(
@@ -58,8 +66,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State < MyHomePage > {
   final List < Transaction > transaction = [
-    // Transaction(id: 't1', title: 'New Shoes', amount: 69.99, date: DateTime.now()),
-    // Transaction(id: 't2', title: 'Weekly Groceries', amount: 90.99, date: DateTime.now())
+    Transaction(id: 't1', title: 'New Shoes', amount: 69.99, date: DateTime.now()),
+    Transaction(id: 't2', title: 'Weekly Groceries', amount: 90.99, date: DateTime.now())
   ];
 
   List < Transaction > get recentTransaction {
@@ -68,8 +76,10 @@ class _MyHomePageState extends State < MyHomePage > {
     }).toList();
   }
 
-  void _addNewTransaction(String title, double amount) {
-    final newTx = Transaction(title: title, amount: amount, date: DateTime.now(),
+  bool showChart = false;
+
+  void _addNewTransaction(String title, double amount, DateTime date) {
+    final newTx = Transaction(title: title, amount: amount, date: date,
       id: DateTime.now().toString());
 
     setState(() {
@@ -87,24 +97,46 @@ class _MyHomePageState extends State < MyHomePage > {
     });
   }
 
+  void deleteTransaction(String id) {
+    setState(() {
+      transaction.removeWhere((tx) => tx.id == id);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appBar = AppBar(
+      title: Text('Personal Expenses'),
+      actions: < Widget > [
+        IconButton(icon: Icon(Icons.add),
+          onPressed: () => startAddNewTransaction(context)),
+      ],
+    );
     return Scaffold(
       resizeToAvoidBottomPadding: false,
-      appBar: AppBar(
-        title: Text('Personal Expenses'),
-        actions: < Widget > [
-          IconButton(icon: Icon(Icons.add),
-            onPressed: () => startAddNewTransaction(context)),
-        ],
-      ),
+      appBar: appBar,
       body: SingleChildScrollView(
         child: Column(
           // mainAxisAlignment: MainAxisAlignment.spaceAround,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: < Widget > [
-            Chart(recentTransaction),
-            TransactionList(transaction)
+            Row(children: <Widget>[
+              Text('Show Chart'),
+              Switch(
+                value: showChart,
+                onChanged: (val){
+                    setState(() {
+                      showChart = val;
+                    });
+                },
+              )
+            ],),
+            showChart ? Container(child: Chart(recentTransaction),
+              height: (MediaQuery.of(context).size.height - appBar.preferredSize.height -
+                MediaQuery.of(context).padding.top) * 0.3, ):
+            Container(child: TransactionList(transaction, deleteTransaction),
+              height: (MediaQuery.of(context).size.height - appBar.preferredSize.height -
+                MediaQuery.of(context).padding.top) * 0.7)
           ],
         ),
       ),
